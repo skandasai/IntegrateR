@@ -254,6 +254,7 @@
 
 
 
+
 library(EBImage)
 library(RColorBrewer)
 library(dplyr)
@@ -361,12 +362,13 @@ ui <- navbarPage("RPE CELL INTEGRATION PROGRAM",
                  tabPanel("Integration Plots",
                           sidebarLayout(
                             sidebarPanel(
-                              fileInput("image_upload_b", "Upload Blue TIF Images", accept = ".tif", multiple = TRUE),
-                              fileInput("image_upload_g", "Upload Green TIF Images", accept = ".tif", multiple = TRUE),
-                              numericInput("cellCount", "Write how many cells were plated")
+                              fileInput("image_upload_b", "Upload Monolayer TIF Images", accept = ".tif", multiple = TRUE),
+                              fileInput("image_upload_g", "Upload Integration cell TIF Images", accept = ".tif", multiple = TRUE),
+                              numericInput("cellCount", "Write how many cells were plated", value = 10000)
                             ),
                             mainPanel(
-                              withSpinner(plotOutput("image_plot"))
+                              withSpinner(plotOutput("image_plot")),
+                              tableOutput("integrationcheck")
                             )
                           )
                  ),
@@ -417,6 +419,56 @@ server <- function(input, output, session) {
 
     ggarrange(intensityplotgfp, intensityplotnongfp)
   })
+  
+  output$integrationcheck <- renderTable({
+    req(metadata())
+
+    monolayer <- metadata()[[1]]
+
+    gfpdata <- metadata()[[2]]
+
+    peak <- which.max(monolayer[,2])
+
+    minimum <- peak-2
+
+    maximum <- peak+2
+
+    highcellid <- max(gfpdata$cellid)
+    
+    integratedcells <- NULL
+    
+    for (i in 1:highcellid){
+      
+      tempdataframe <- gfpdata %>% 
+        filter(cellid == i)
+      
+      gfpzpeak <- which.max(tempdataframe$intensity)
+      
+      if (gfpzpeak >= minimum & gfpzpeak <= maximum){
+        if (is.null(integratedcells) == TRUE){
+          integratedcells <- c("True")
+        } else {
+          integratedcells <- append(integratedcells, "True")
+        } 
+      } else{
+        if (is.null(integratedcells) == TRUE){
+          integratedcells <- c("False")
+        } else {
+          integratedcells <- append(integratedcells, "False")
+        } 
+      }
+      
+    }
+    
+    integrated_table <- data.frame(cellid = c(1:highcellid), integrated = integratedcells)
+    
+    return(integrated_table)
+    
+  })
+  
 }
 
 shinyApp(ui = ui, server = server)
+
+
+
