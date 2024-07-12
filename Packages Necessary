@@ -1,0 +1,12 @@
+#R packages necessary:
+EBImage
+RColorBrewer
+dplyr
+shiny
+shinythemes
+ggplot2
+plyr
+doParallel
+DT
+ggpubr
+shinycssloaders
